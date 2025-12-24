@@ -1,0 +1,16 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+  CredentialsManager -> C:\Programing\Net\SqlServerIndexMaintenanceSystem\CredentialsManager\bin\Debug\net8.0\win-x64\CredentialsManager.dll
+C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\Services\DashboardService.cs(64,19): warning CS8618: Non-nullable property 'ServerName' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem.csproj]
+C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\Web\App.razor(19,26): error CS0103: The name 'InteractiveServer' does not exist in the current context [C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem.csproj]
+
+Build FAILED.
+
+C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\Services\DashboardService.cs(64,19): warning CS8618: Non-nullable property 'ServerName' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the property as nullable. [C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem.csproj]
+C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\Web\App.razor(19,26): error CS0103: The name 'InteractiveServer' does not exist in the current context [C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem.csproj]
+    1 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:02.25
+
+Workload updates are available. Run `dotnet workload list` for more information.

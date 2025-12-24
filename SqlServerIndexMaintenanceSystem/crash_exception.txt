@@ -1,0 +1,19 @@
+Microsoft.Data.SqlClient.SqlException (0x80131904): Invalid column name 'schedule_id'.
+Invalid column name 'schedule_id'.
+   at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteNonQuery(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
+   at Microsoft.Data.SqlClient.SqlCommand.EndExecuteNonQueryInternal(IAsyncResult asyncResult)
+   at Microsoft.Data.SqlClient.SqlCommand.EndExecuteNonQueryAsync(IAsyncResult asyncResult)
+   at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteNonQueryAsync>b__193_1(IAsyncResult asyncResult)
+   at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- End of stack trace from previous location ---
+   at Dapper.SqlMapper.ExecuteImplAsync(IDbConnection cnn, CommandDefinition command, Object param) in /_/Dapper/SqlMapper.Async.cs:line 662
+   at SqlServerIndexMaintenanceSystem.Workers.ImsMigrator.<>c__DisplayClass18_0.<<MigrateSchemaSafeAsync>b__1>d.MoveNext() in C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\Workers\ImsMigrator.cs:line 219
+--- End of stack trace from previous location ---
+   at SqlServerIndexMaintenanceSystem.Workers.ImsMigrator.MigrateSchemaSafeAsync() in C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\Workers\ImsMigrator.cs:line 281
+   at SqlServerIndexMaintenanceSystem.Workers.ImsMigrator.ExecuteAsync(CancellationToken cancellationToken) in C:\Programing\Net\SqlServerIndexMaintenanceSystem\SqlServerIndexMaintenanceSystem\Workers\ImsMigrator.cs:line 73
+ClientConnectionId:208153a1-e57b-4227-9245-657aee816eb7
+Error Number:207,State:1,Class:16

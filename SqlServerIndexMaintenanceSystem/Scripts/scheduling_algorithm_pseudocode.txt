@@ -1,0 +1,434 @@
+Description of schedule:
+
+freq_type - int
+
+	How frequently a job runs for this schedule.
+
+	1 = One day only
+	4 = Daily
+	8 = Weekly
+	16 = Monthly
+	32 = Monthly, relative to freq_interval
+	(not supported)64 = Runs when the SQL Server Agent service starts
+	(not supported)128 = Runs when the computer is idle
+
+freq_interval - int	
+
+	Days that the job is executed. Depends on the value of freq_type. 
+	The default value is 0, which indicates that freq_interval is unused. 
+	See the table below for the possible values and their effects.
+	
+	Value of freq_type			Effect on freq_interval
+	-------------------------------------------------------
+	1 (once)					freq_interval is unused (0)
+	4 (daily)					Every freq_interval days
+	8 (weekly)					freq_interval is one or more of the following:
+									1 = Sunday
+									2 = Monday
+									4 = Tuesday
+									8 = Wednesday
+									16 = Thursday
+									32 = Friday
+									64 = Saturday
+	16 (monthly)				On the freq_interval day of the month
+	32 (monthly, relative)		freq_interval is one of the following:
+									1 = Sunday
+									2 = Monday
+									3 = Tuesday
+									4 = Wednesday
+									5 = Thursday
+									6 = Friday
+									7 = Saturday
+									8 = Day
+									9 = Weekday
+									10 = Weekend day
+	64 (starts when SQL Server Agent service starts)	freq_interval is unused (0)
+	128 (runs when computer is idle)					freq_interval is unused (0)
+
+freq_subday_type - int
+
+	Units for the freq_subday_interval. The following are the possible 
+	values and their descriptions.
+	
+	0 : Any time between the start time and end time
+	1 : At the specified time (start time)
+	2 : Seconds
+	4 : Minutes
+	8 : Hours
+
+freq_subday_interval - int
+
+	Number of freq_subday_type periods to occur between each execution of the job.
+
+freq_relative_interval - int	
+
+	When freq_interval occurs in each month, if freq_type is 32 (monthly relative). 
+	Can be one of the following values:
+
+	0 = Each
+	1 = First
+	2 = Second
+	4 = Third
+	8 = Fourth
+	16 = Last
+
+freq_recurrence_factor - int
+
+	Number of weeks or months between the scheduled execution of a job. 
+	freq_recurrence_factor is used only if freq_type is 8, 16, or 32. 
+	If this column contains 0, freq_recurrence_factor is unused.
+
+#----------------------------------------------------------------------------
+
+entry data:
+- last execution date and time (LED, LET)
+- current date and time (CD, CT)
+- active start/end date (ASD, AED)
+- active start/end time (AST, AET)
+
+validation:
+	if freq_recurrence_factor < 0
+		throw Error('freq_recurrence_factor should be >= 0')
+	if freq_type == DAILY_4 and freq_interval <= 0
+		throw Error('freq_interval should be > 0 for daily schedules')
+	if freq_type == WEEKLY_8 
+		if freq_interval <= 0 or freq_interval >= 128
+			throw Error('freq_interval should be > 0 and < 128 for weekly schedules')
+	if freq_type == MONTHLY_16
+		if (freq_interval <=0 or freq_interval > 31)
+			throw Error('freq_interval should be > 0 and < 32 for monthly schedules')
+	if freq_type == MONTHLY_RELATIVE_32
+		if (freq_interval <=0 or freq_interval >= 11)
+			throw Error('freq_interval should be > 0 and < 11 for monthly relative schedules')
+		if (freq_relative_interval not in (0, 1, 2, 4, 8, 16))
+			throw Error('freq_relative_interval should be in (0, 1, 2, 4, 8, 16) - for monthly relative schedule')
+		if (freq_interval == DAY_8 and freq_relative_interval not in (1, 2, 4, 8, 16))
+			throw Error('freq_relative_interval should be in (1, 2, 4, 8, 16) for day interval of monthly relative schedule')
+	if freq_subday_type in (2, 4, 8)
+        if (freq_subday_interval <= 0)
+            throw Error('freq_subday_interval should be > 0 for freq_subday_type 2, 4, or 8')
+	
+helping functions:
+
+#----------------------------------------------------------------------------
+# returns boolean
+
+function matchDay(
+	active_start_date,
+	freq_type,
+	freq_interval,
+	freq_relative_interval,
+	freq_recurrence_factor,
+	d: date):
+	
+	switch (freq_type)
+		case ONE_TIME_1:
+			return d == active_start_date
+		case DAILY_4:
+			diff = daysBetween(active_start_date, d)
+			return (diff >= 0) and (diff mod freq_interval == 0)
+		case WEEKLY_8:
+            # weekdays bitmask + every M weeks
+            weekdayMask = 1 << (d.weekday() - 1)        # sunday=1 -> bit0=1
+            weeksDiff = weeksBetween(active_start_date, d)
+            return (weekdayMask & freq_interval) != 0
+				and (freq_recurrence_factor == 0
+					or weeksDiff mod freq_recurrence_factor == 0)
+		case MONTHLY_16:
+			dayNum = getDay(d)
+			monthsDiff = monthsBetween(active_start_date, d)
+            return (dayNum == freq_interval)
+				and (freq_recurrence_factor == 0
+					or monthsDiff mod freq_recurrence_factor == 0)
+		case MONTHLY_RELATIVE_32:
+            monthsDiff = monthsBetween(active_start_date, d)
+            if freq_recurrence_factor > 0 
+					and (monthsDiff mod freq_recurrence_factor) != 0
+                return false
+            
+			if freq_relative_interval == 0
+				currentWeekday = d.weekday()
+				return currentWeekday == freq_interval
+					# freq_interval == 8 is not possible here
+					or freq_interval == 9 and currentWeekday in (2, 3, 4, 5, 6)
+					or freq_interval == 10 and currentWeekday in (1, 7)
+			else
+				# find the Nth weekday in d.month
+				return (d == nthRelativeDateOfMonth(d.year, d.month, freq_interval, freq_relative_interval))
+				
+	return false
+
+#----------------------------------------------------------------------------
+Returns Date
+
+function nthRelativeDateOfMonth(year, month, freq_interval, freq_relative_interval):
+    # 0. If no ordinal, nothing to do
+    if freq_relative_interval == 0:
+        return null
+
+    # 1. Decode ordinalIndex from the bit‐flag:
+    #    1->1, 2->2, 4->3, 8->4, 16->5
+    ordinalIndex = log2(freq_relative_interval) + 1
+    #    (e.g. if freq_relative_interval==4, log2(4)=2 -> +1 -> 3rd)
+
+    # 2. Days in this month (with leap‐year for Feb)
+    function daysInMonth(y, m):
+        if m in {1,3,5,7,8,10,12}: return 31
+        if m in {4,6,9,11}:        return 30
+        return isLeapYear(y) ? 29 : 28
+
+    totalDays = daysInMonth(year, month)
+
+    # 3. Helper: weekday of a given date, 1=Sun…7=Sat
+    #    (we assume a built-in date(year,month,day).weekday())
+
+    # 4. Case-by-case by freq_interval
+    switch freq_interval:
+
+      # ——————————————————————————————————————————————————————————
+      case 1,2,3,4,5,6,7:
+        # “Nth [Sun…Sat] of the month”
+        desiredDow = freq_interval       # 1=Sun…7=Sat
+        firstDay   = date(year, month, 1)
+        firstDow   = firstDay.weekday()  # 1=Sun…7=Sat
+
+        # offset to first desiredDow in the month
+        offset = (desiredDow - firstDow + 7) mod 7
+        firstOccur = firstDay.addDays(offset)
+
+        if ordinalIndex < 5:
+            candidate = firstOccur.addDays((ordinalIndex - 1) * 7)
+            return (candidate.month == month) ? candidate : null
+        else:
+            # ordinalIndex == 5 -> “Last”
+            lastDay = date(year, month, totalDays)
+            lastDow = lastDay.weekday()
+            backOff = (lastDow - desiredDow + 7) mod 7
+            return lastDay.addDays(-backOff)
+
+      # ——————————————————————————————————————————————————————————
+      case 8:
+        # “Nth day of the month” (literal day‐of‐month)
+        if ordinalIndex < 5:
+            # 1st -> 1, 2nd -> 2, 3rd -> 3, 4th -> 4
+            if ordinalIndex <= totalDays:
+                return date(year, month, ordinalIndex)
+            else:
+                return null
+        else:
+            # “Last” -> last calendar day
+            return date(year, month, totalDays)
+
+      # ——————————————————————————————————————————————————————————
+      case 9:
+        # “Nth Weekday of month” (Mon–Fri)
+        count = 0
+        for day in 1..totalDays:
+            dow = date(year, month, day).weekday()
+            if dow >= 2 and dow <= 6:      # Mon=2…Fri=6
+                count += 1
+                if count == ordinalIndex:
+                    return date(year, month, day)
+        if ordinalIndex == 5:
+            # last weekday -> scan backward
+            for offset in 0..totalDays-1:
+                d = date(year, month, totalDays - offset)
+                dow = d.weekday()
+                if dow >= 2 and dow <= 6:
+                    return d
+        return null
+
+      # ——————————————————————————————————————————————————————————
+      case 10:
+        # “Nth Weekend-day of month” (Sat, Sun)
+        count = 0
+        for day in 1..totalDays:
+            dow = date(year, month, day).weekday()
+            if dow == 1 or dow == 7:      # Sun=1 or Sat=7
+                count += 1
+                if count == ordinalIndex:
+                    return date(year, month, day)
+        if ordinalIndex == 5:
+            # last weekend-day -> scan backward
+            for offset in 0..totalDays-1:
+                d = date(year, month, totalDays - offset)
+                dow = d.weekday()
+                if dow == 1 or dow == 7:
+                    return d
+        return null
+
+      # ——————————————————————————————————————————————————————————
+      default:
+        return null
+		
+#----------------------------------------------------------------------------
+# Returns TIME
+# Can only return time associated within day 'd'.
+# such time 't' that fromDT < combine(d, t)
+function nextTimeForDate(
+	active_start_time,
+	active_end_time,
+    active_start_date,
+    freq_type,
+    freq_interval,
+    freq_relative_interval,
+    freq_recurrence_factor,
+	freq_subday_type,
+	freq_subday_interval,
+	d,
+	fromDT):
+
+    # 0) Pre-parse schedule fields once
+    windowStart   = active_start_time   # Time
+    windowEnd     = active_end_time     # Time
+    isNightWindow = (windowStart > windowEnd)
+
+    # 1) Handle non-repeating window (ANY_TIME_0) as a single firing at windowStart or fromDT.time
+    # TODO: it will fire always during the window
+    if freq_subday_type == ANY_TIME_0:
+        if (fromDT.date < d) or (fromDT.date == d and fromDT.time <= windowStart):
+            return combine(d, windowStart)
+        else if (fromDT.date == d and isNightWindow and (fromDT.time >= windowStart or fromDT.time <= windowEnd)):
+            return combine(d, fromDT.time)
+        else if (fromDT.date == d and not isNightWindow and (fromDT.time >= windowStart and fromDT.time <= windowEnd)):
+            return combine(d, fromDT.time)
+        else:
+            return null
+
+    # 2) Handle non-repeating windows (AT_SPECIFIED_TIME_1) as a single firing at windowStart
+    if freq_subday_type == AT_SPECIFIED_TIME_1:
+        # Fire exactly at windowStart on day d (start day of window, not rollover day)
+        # Allow selection if we are scanning a future day OR same day not past windowStart.
+        if (fromDT.date < d) or (fromDT.date == d and fromDT.time <= windowStart):
+            return windowStart
+        else:
+            return null
+
+    # 3) Compute the repeat interval in seconds for true repeating types (seconds/minutes/hours)
+	unitSec = SWITCH(freq_subday_type):
+		CASE SECONDS_2: return 1
+		CASE MINUTES_4: return 60
+		CASE HOURS_8:   return 3600
+	# (No other types should reach here.)
+	stepSec = unitSec * freq_subday_interval
+
+    # 4) If this is the rollover day of a night-window, try that first
+    if isNightWindow:
+        prevDay = d.addDays(-1)
+        if matchDay(
+            active_start_date,
+            freq_type,
+            freq_interval,
+            freq_relative_interval,
+            freq_recurrence_factor,
+            prevDay):
+
+            cursorDateTime = combine(prevDay, windowStart)
+            cursorLatestDateTime = combine(d, windowEnd)
+            cursorMinTargetDateTime = MAXDATE(fromDT, combine(d, 0))
+            cursorDiffSeconds = CEILING(DATEDIFF(SECONDS, cursorDateTime, cursorMinTargetDateTime) * 1.0 / stepSec) * stepSec
+
+            cursorDateTime = DATEADD(SECONDS, cursorDiffSeconds, cursorDateTime)
+
+            if (cursorDateTime <= cursorLatestDateTime)
+                return cursorDateTime
+
+    # 5) Now handle the “main” segment on day = d
+    #    if night-window, it runs from windowStart -> 23:59:59; else windowStart -> windowEnd
+
+    segStartTime = windowStart
+    segEndTime = isNightWindow ? ToTime('23:59:59') : windowEnd
+
+    targetStartDateTime = combine(d, windowStart)
+    minTargetDateTime = MAXDATE(fromDB, targetStartDateTime)
+    targetLatestDateTime = combine(d, segEndTime)
+
+    if minTargetDateTime <= targetLatestDateTime:
+        diffSeconds = CEILING(DATEDIFF(SECONDS, targetStartDateTime, minTargetDateTime) * 1.0 / stepSec) * stepSec
+        candDateTime = DATEADD(SECONDS, diffSeconds, targetStartDateTime)
+
+        if candDateTime <= targetLatestDateTime:
+            return candDateTime
+
+    # 6) no more runs on this date
+    return null
+
+#----------------------------------------------------------------------------
+
+# Main function: depends on schedule, current date and time and previous execution
+#----------------------------------------------------------------------------
+# Wrapper that adjusts the fromDT passed into getNextOccurrence so we do not
+# return the same occurrence as the previous execution, and so that a prior
+# execution inside an ongoing window continues with the next repeat.
+#----------------------------------------------------------------------------
+function getNextOccurrenceWithPrevious(
+    schedule,
+    currentDT,                     # "now" (datetime)
+    previous_execution_date,       # nullable / 0 if never executed
+    previous_execution_time):      # nullable / 0 if never executed
+
+    # 0) Parse and normalize schedule‐wide fields
+    startDate     = parseDate(schedule.active_start_date)
+    endDate       = parseDate(schedule.active_end_date)   # 0 -> infinite
+    windowStart   = parseTime(schedule.active_start_time)
+    windowEnd     = parseTime(schedule.active_end_time)
+    isNightWindow = (windowStart > windowEnd)
+
+    # 1) Validate params...
+
+    # 2) Reconstruct previous execution DateTime if both parts present
+    if previous_execution_date is null or previous_execution_time is null:
+        lastExecutionDT = null
+    else:
+        lastExecutionDT = combine(previous_execution_date, previous_execution_time)
+
+    # 3) If schedule is one-time (freq_type == ONE_TIME_1) and it already ran, nothing more to do
+    if schedule.freq_type == ONE_TIME_1 and lastExecutionDT != null:
+        return null
+
+    # 4) Establish a baseline fromDT = currentDT
+    baseFromDT = currentDT
+    
+    # 5.1) if schedule is any-time (freq_subday_type == ANY_TIME_0) and it has already ran today, nothing more for today
+    if schedule.freq_subday_type == ANY_TIME_0 and lastExecutionDT != null and lastExecutionDT.date == currentDT.date:
+        baseFromDT = addDays(1, currentDT)
+    # 5.2) If we have a previous execution, advance the baseline so that the next
+    #    search starts strictly AFTER the previous run time. We add a small
+    #    epsilon (1 second) which is sufficient because the core algorithm
+    #    treats times >= fromDT. This prevents returning the same occurrence
+    #    again (especially for freq_subday_type = AT_SPECIFIED_TIME_1) and
+    #    allows continued intra-window repetition for repeating schedules.
+    else if lastExecutionDT != null:
+            epsilon = 1 second
+            candidateFrom = lastExecutionDT.addSeconds(epsilon)
+            if candidateFrom > baseFromDT:
+                baseFromDT = candidateFrom
+
+    # 6) (Optional) Clamp to active_start_date if schedule hasn't started yet
+    #    Note: getNextOccurrence itself already enforces start/end logic, so
+    #    this is defensive only.
+    if schedule.active_start_date != 0:
+        asd = parseDate(schedule.active_start_date)
+        if baseFromDT.date < asd:
+            # Move just before the active start window so the first valid time is picked
+            baseFromDT = combine(asd, time(00:00:00))
+		
+    # 7) FIRST: if we might still be in yesterday’s rollover window
+    if isNightWindow and baseFromDT.time <= windowEnd and baseFromDT.date <= endDate:
+        prevDay = baseFromDT.date.addDays(-1)
+        if prevDay >= startDate and matchDay(<schedule_params>, prevDay):
+            candidateT = nextTimeForDate(active_start_time, active_end_time, active_start_date, <schedule_params>, prevDay, baseFromDT)
+            if candidateT != null:
+                return candidateT
+
+    # 8) NOW scan from “today” (or later) forward
+    cursorD = max(baseFromDT.date, startDate)
+    while (endDate is infinite) or (cursorD <= endDate):
+        if matchDay(<schedule_params>, cursorD):
+            candidateT = nextTimeForDate(active_start_time, active_end_time, active_start_date, <schedule_params>, cursorD, baseFromDT)
+            if candidateT != null:
+                return candidateT
+        cursorD = cursorD.addDays(1)
+
+    # 8) nothing left
+    return null
