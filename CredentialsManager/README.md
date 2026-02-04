@@ -62,21 +62,25 @@ Lists all servers and usernames (passwords are not displayed).
 ## Examples
 
 Add a credential:
+
 ```
 CredentialsManager.exe add SQLSERVER01 sa mySecurePassword123
 ```
 
 Use a custom credentials file:
+
 ```
 CredentialsManager.exe --file C:\secure\my_credentials.bin add SQLSERVER02 admin P@ssw0rd
 ```
 
 List all stored credentials:
+
 ```
 CredentialsManager.exe list --file C:\secure\my_credentials.bin
 ```
 
 Remove a credential:
+
 ```
 CredentialsManager.exe remove SQLSERVER01 --file C:\secure\my_credentials.bin
 ```

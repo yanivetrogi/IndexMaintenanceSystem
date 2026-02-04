@@ -1,0 +1,176 @@
+﻿@page "/servers/edit/{id:int}"
+@inject DashboardService DashboardService
+@inject NavigationManager Navigation
+@using IndexMaintenanceSystem.Models.Ims
+
+<h3>Edit Server</h3>
+
+@if (server == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="server" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="row">
+            <div class="col-md-6">
+                <h4>General</h4>
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control" @bind-Value="server.Name" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Active</label>
+                    <InputCheckbox class="form-check-input" @bind-Value="server.Active" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Schedule Id</label>
+                    <InputNumber class="form-control" @bind-Value="server.ScheduleId" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Max Threads</label>
+                    <InputNumber class="form-control" @bind-Value="server.MaxThreads" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Discover Databases</label>
+                    <InputCheckbox class="form-check-input" @bind-Value="server.DiscoverDatabases" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Search Indexes</label>
+                    <InputCheckbox class="form-check-input" @bind-Value="server.SearchIndexes" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Run Immediately</label>
+                    <InputCheckbox class="form-check-input" @bind-Value="server.RunImmediately" />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Exclude Last Partition</label>
+                    <InputCheckbox class="form-check-input" @bind-Value="server.ExcludeLastPartition" />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Integrated Security</label>
+                    <InputCheckbox class="form-check-input" @bind-Value="server.IntegratedSecurity" />
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h4>Index Settings</h4>
+                <div class="mb-3">
+                    <label class="form-label">Rebuild Threshold (%)</label>
+                    <input type="number" class="form-control" @bind="server.RebuildThreshold" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reorganize Threshold (%)</label>
+                    <input type="number" class="form-control" @bind="server.ReorganizeThreshold" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Min Index Size (KB)</label>
+                    <InputNumber class="form-control" @bind-Value="server.IndexMinSizeKb" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">MaxDOP</label>
+                    <input type="number" class="form-control" @bind="server.Maxdop" />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Online Rebuild</label>
+                    <!-- Nullable bool needs explicit casting or logic? InputCheckbox supports nullable bool? Standard InputCheckbox does not, usually. -->
+                    <!-- We might need to handle tri-state or defaulting. For now, assuming standard bool or custom select. -->
+                    <!-- Since properties are nullable, we need a select for True/False/Null ideally, or just Checkbox treating null as false? -->
+                    <!-- To simplify, I will use a Select for nullable booleans -->
+                    <InputSelect class="form-control" @bind-Value="server.Online">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Sort In TempDB</label>
+                    <InputSelect class="form-control" @bind-Value="server.SortInTempdb">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h4>Log & Disk Settings</h4>
+                 <div class="mb-3">
+                    <label class="form-label">TLog Size Factor</label>
+                    <InputNumber class="form-control" @bind-Value="server.TlogSizeFactor" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">TLog Growth Factor</label>
+                    <InputNumber class="form-control" @bind-Value="server.TlogGrowthFactor" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Disk Safety Pct</label>
+                    <InputNumber class="form-control" @bind-Value="server.DiskSafetyPct" />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Disk Min Remaining MB</label>
+                    <InputNumber class="form-control" @bind-Value="server.DiskMinRemainingMb" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Check TLog Disk</label>
+                    <InputSelect class="form-control" @bind-Value="server.EnableTlogDiskCheck">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Check TLog File</label>
+                    <InputSelect class="form-control" @bind-Value="server.EnableTlogFileCheck">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Check AlwaysOn</label>
+                    <InputSelect class="form-control" @bind-Value="server.EnableAlwaysOnCheck">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Save</button>
+        <button type="button" class="btn btn-secondary mt-3 ms-2" @onclick="Cancel">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Server? server;
+
+    protected override async Task OnInitializedAsync()
+    {
+        server = await DashboardService.GetServerAsync(Id);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (server != null)
+        {
+            await DashboardService.UpdateServerAsync(server);
+            Navigation.NavigateTo("/servers");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/servers");
+    }
+}
+

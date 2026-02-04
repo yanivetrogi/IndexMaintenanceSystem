@@ -1,0 +1,67 @@
+﻿@page "/"
+@inject DashboardService DashboardService
+@using IndexMaintenanceSystem.Services
+
+<h1>Overview</h1>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Upcoming Maintenance Checks</h5>
+            </div>
+            <div class="card-body p-0">
+                @if (checks == null)
+                {
+                    <div class="p-4 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!checks.Any())
+                {
+                     <div class="p-4 text-center text-muted">No upcoming checks found.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Next Execution</th>
+                                    <th>Server</th>
+                                    <th>Database</th>
+                                    <th>Index</th>
+                                    <th>Schedule</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var check in checks)
+                                {
+                                    <tr>
+                                        <td>@check.NextExecution.ToString("g")</td>
+                                        <td>@check.ServerName</td>
+                                        <td>@check.DatabaseName</td>
+                                        <td>@(check.IndexName ?? "- all -")</td>
+                                        <td>@check.ScheduleName</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<NextCheckDisplay>? checks;
+
+    protected override async Task OnInitializedAsync()
+    {
+        checks = await DashboardService.GetUpcomingChecksAsync();
+    }
+}
+

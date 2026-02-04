@@ -1,0 +1,87 @@
+﻿@page "/indexes"
+@inject DashboardService DashboardService
+@using IndexMaintenanceSystem.Models.Ims
+
+<h3>Indexes</h3>
+
+<div class="mb-3">
+    <a href="/indexes/add" class="btn btn-primary">Add Index</a>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body p-0">
+        @if (indexes == null)
+        {
+            <div class="p-4">Loading...</div>
+        }
+        else if (!indexes.Any())
+        {
+            <div class="p-4 text-center text-muted">
+                No indexes configured. 
+                <br />
+                <small>Note: If search_indexes is enabled on server/database level, indexes are auto-discovered and don't need manual configuration.</small>
+            </div>
+        }
+        else
+        {
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Database ID</th>
+                        <th>Schema</th>
+                        <th>Table</th>
+                        <th>Index Name</th>
+                        <th>Active</th>
+                        <th>Schedule ID</th>
+                        <th>Run Immediately</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var index in indexes)
+                    {
+                        <tr>
+                            <td>@index.IndexId</td>
+                            <td>@index.DatabaseId</td>
+                            <td>@index.Schema</td>
+                            <td>@index.Table</td>
+                            <td>@(index.Name ?? "- all -")</td>
+                            <td>
+                                @if(index.Active) { <span class="badge bg-success">Yes</span> } else { <span class="badge bg-secondary">No</span> }
+                            </td>
+                            <td>@(index.ScheduleId?.ToString() ?? "-")</td>
+                            <td>
+                                @if(index.RunImmediately == true) 
+                                { 
+                                    <span class="badge bg-warning">Yes</span> 
+                                } 
+                                else if(index.RunImmediately == false) 
+                                { 
+                                    <span class="badge bg-secondary">No</span> 
+                                } 
+                                else 
+                                { 
+                                    <span class="text-muted">Inherit</span> 
+                                }
+                            </td>
+                            <td>
+                                <a href="/indexes/edit/@index.IndexId" class="btn btn-sm btn-outline-primary">Edit</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private IEnumerable<IndexMaintenanceSystem.Models.Ims.Index>? indexes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        indexes = await DashboardService.GetIndexesAsync();
+    }
+}
+

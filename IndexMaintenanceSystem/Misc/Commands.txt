@@ -1,0 +1,21 @@
+﻿
+
+Option 1: Standard Run (Recommended)
+cd [PathToRepo]\IndexMaintenanceSystem
+dotnet run
+
+Option 2: Run with Auto-Reload (Development)
+cd [PathToRepo]\IndexMaintenanceSystem
+dotnet watch run
+
+Option 3: Run in Release Mode (Optimized)
+cd [PathToRepo]\IndexMaintenanceSystem
+dotnet run --configuration Release
+
+
+https://localhost:50771/
+
+
+=== AlwaysOn Availability Group Diagnostics ===
+Run this script to diagnose AG seeding failures:
+[PathToRepo]\IndexMaintenanceSystem\Misc\DiagnoseAGSeedingIssues.sql

@@ -1,0 +1,214 @@
+﻿@page "/indexes/add"
+@inject DashboardService DashboardService
+@inject NavigationManager NavigationManager
+@using IndexMaintenanceSystem.Models.Ims
+@using System.ComponentModel.DataAnnotations
+
+<h3>Add Index</h3>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+    </div>
+}
+
+<div class="card mt-3">
+    <div class="card-body">
+        <EditForm Model="@newIndex" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Database *</label>
+                        <InputSelect class="form-select" @bind-Value="newIndex.DatabaseId">
+                            <option value="0">-- Select Database --</option>
+                            @if (databases != null)
+                            {
+                                @foreach (var db in databases)
+                                {
+                                    <option value="@db.DatabaseId">[@db.ServerId] @db.Name</option>
+                                }
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Schema *</label>
+                        <InputText class="form-control" @bind-Value="newIndex.Schema" placeholder="e.g., dbo" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Table *</label>
+                        <InputText class="form-control" @bind-Value="newIndex.Table" placeholder="e.g., MyTable" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Index Name</label>
+                        <InputText class="form-control" @bind-Value="newIndex.Name" placeholder="Leave empty for all indexes on table" />
+                        <small class="form-text text-muted">Leave empty to target all indexes on the table</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="newIndex.Active" id="activeCheck" />
+                            <label class="form-check-label" for="activeCheck">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Schedule ID</label>
+                        <InputNumber class="form-control" @bind-Value="newIndex.ScheduleId" placeholder="Leave empty to inherit" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Run Immediately</label>
+                        <InputSelect class="form-select" @bind-Value="newIndex.RunImmediately">
+                            <option value="">Inherit</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </InputSelect>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Rebuild Threshold (%)</label>
+                        <input type="number" class="form-control" @bind="newIndex.RebuildThreshold" placeholder="Inherit" min="0" max="100" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Reorganize Threshold (%)</label>
+                        <input type="number" class="form-control" @bind="newIndex.ReorganizeThreshold" placeholder="Inherit" min="0" max="100" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Index Min Size (KB)</label>
+                        <InputNumber class="form-control" @bind-Value="newIndex.IndexMinSizeKb" placeholder="Inherit" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Online</label>
+                        <InputSelect class="form-select" @bind-Value="newIndex.Online">
+                            <option value="">Inherit</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">MAXDOP</label>
+                        <input type="number" class="form-control" @bind="newIndex.Maxdop" placeholder="Inherit" min="0" max="255" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Sort In TempDB</label>
+                        <InputSelect class="form-select" @bind-Value="newIndex.SortInTempdb">
+                            <option value="">Inherit</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </InputSelect>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Add Index</button>
+                <a href="/indexes" class="btn btn-secondary ms-2">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private IndexMaintenanceSystem.Models.Ims.Index newIndex = new IndexMaintenanceSystem.Models.Ims.Index 
+    { 
+        Active = true,
+        Schema = "",
+        Table = ""
+    };
+    private IEnumerable<Database>? databases;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        databases = await DashboardService.GetDatabasesAsync();
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        if (newIndex.DatabaseId == 0)
+        {
+            errorMessage = "Please select a database.";
+        }
+        else if (string.IsNullOrWhiteSpace(newIndex.Schema))
+        {
+            errorMessage = "Schema is required.";
+        }
+        else if (string.IsNullOrWhiteSpace(newIndex.Table))
+        {
+            errorMessage = "Table is required.";
+        }
+        else
+        {
+            errorMessage = "Please fix the validation errors above.";
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            if (newIndex.DatabaseId == 0)
+            {
+                errorMessage = "Please select a database.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(newIndex.Schema))
+            {
+                errorMessage = "Schema is required.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(newIndex.Table))
+            {
+                errorMessage = "Table is required.";
+                return;
+            }
+
+            await DashboardService.AddIndexAsync(newIndex);
+            NavigationManager.NavigateTo("/indexes");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error adding index: {ex.Message}";
+        }
+    }
+}
+

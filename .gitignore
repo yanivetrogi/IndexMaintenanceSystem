@@ -361,3 +361,13 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Project specific ignores
+SqlServerIndexMaintenanceSystem/build_log.txt
+SqlServerIndexMaintenanceSystem/crash_exception.txt
+SqlServerIndexMaintenanceSystem/run_log*.txt
+SqlServerIndexMaintenanceSystem/triggers_dump.txt
+SqlServerIndexMaintenanceSystem/validation_error.txt
+*.bin
+publish_v*/
+appsettings.json

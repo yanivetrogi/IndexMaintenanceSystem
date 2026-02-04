@@ -1,0 +1,152 @@
+﻿@page "/databases/edit/{id:int}"
+@inject DashboardService DashboardService
+@inject NavigationManager Navigation
+@using IndexMaintenanceSystem.Models.Ims
+
+<h3>Edit Database</h3>
+
+@if (database == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="database" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="row">
+            <div class="col-md-6">
+                <h4>General</h4>
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control" @bind-Value="database.Name" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Active</label>
+                    <InputCheckbox class="form-check-input" @bind-Value="database.Active" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Schedule Id</label>
+                    <InputNumber class="form-control" @bind-Value="database.ScheduleId" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Max Threads</label>
+                    <InputNumber class="form-control" @bind-Value="database.MaxThreads" />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Search Indexes</label>
+                    <InputSelect class="form-control" @bind-Value="database.SearchIndexes">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Run Immediately</label>
+                    <InputSelect class="form-control" @bind-Value="database.RunImmediately">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Exclude Last Partition</label>
+                     <InputSelect class="form-control" @bind-Value="database.ExcludeLastPartition">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h4>Index Settings</h4>
+                <div class="mb-3">
+                    <label class="form-label">Rebuild Threshold (%)</label>
+                    <input type="number" class="form-control" @bind="database.RebuildThreshold" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reorganize Threshold (%)</label>
+                    <input type="number" class="form-control" @bind="database.ReorganizeThreshold" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Min Index Size (KB)</label>
+                    <InputNumber class="form-control" @bind-Value="database.IndexMinSizeKb" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">MaxDOP</label>
+                    <input type="number" class="form-control" @bind="database.Maxdop" />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Online Rebuild</label>
+                    <InputSelect class="form-control" @bind-Value="database.Online">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Sort In TempDB</label>
+                    <InputSelect class="form-control" @bind-Value="database.SortInTempdb">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h4>Log & Checks</h4>
+                 <div class="mb-3">
+                    <label class="form-label">TLog Size Factor</label>
+                    <InputNumber class="form-control" @bind-Value="database.TlogSizeFactor" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">TLog Growth Factor</label>
+                    <InputNumber class="form-control" @bind-Value="database.TlogGrowthFactor" />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Check AlwaysOn</label>
+                    <InputSelect class="form-control" @bind-Value="database.EnableAlwaysOnCheck">
+                        <option value="">Inherit/Default</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </InputSelect>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Save</button>
+        <button type="button" class="btn btn-secondary mt-3 ms-2" @onclick="Cancel">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Database? database;
+
+    protected override async Task OnInitializedAsync()
+    {
+        database = await DashboardService.GetDatabaseAsync(Id);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (database != null)
+        {
+            await DashboardService.UpdateDatabaseAsync(database);
+            Navigation.NavigateTo("/databases");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/databases");
+    }
+}
+
