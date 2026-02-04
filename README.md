@@ -39,9 +39,19 @@ Once started, the management dashboard will be available at `http://localhost:50
 
 ### Windows Service Installation
 
+You can install the application as a Windows Service using the provided PowerShell script (recommended) or manually.
+
+**Using PowerShell (Administrator):**
+
+1. Open PowerShell as Administrator.
+2. Navigate to the application directory.
+3. Run: `.\InstallService.ps1`
+
+**Manual Installation (cmd):**
+
 ```cmd
-sc.exe create "IndexMaintenanceService" binpath="C:\Program Files\IndexMaintenanceSystem\IndexMaintenanceSystem.exe"
-net start IndexMaintenanceService
+sc.exe create "IndexMaintenanceSystem" binpath="C:\Path\To\IndexMaintenanceSystem.exe"
+net start IndexMaintenanceSystem
 ```
 
 ## Configuration
@@ -451,6 +461,16 @@ Key events logged include:
 - **Service Startup**: Includes the system version and operational mode.
 - **Service Shutdown**: Logs graceful stopping of the service.
 - **Critical Errors**: Any unhandled exceptions that cause a service failure are logged with full stack traces for immediate troubleshooting.
+
+> [!IMPORTANT]
+> **One-Time Setup**: Creating the Event Log source requires **Administrative privileges**. You have two options:
+>
+> 1. **Run as Administrator**: Start the application (`IndexMaintenanceSystem.exe`) as Administrator once. It will attempt to create the source automatically.
+> 2. **PowerShell Script**: Run the provided helper script as Administrator:
+>
+>    ```powershell
+>    .\CreateEventLogSource.ps1
+>    ```
 
 ```Json
 {
