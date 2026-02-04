@@ -9,7 +9,8 @@ namespace CredentialsManager
 
         static void Main(string[] args)
         {
-            AnsiConsole.MarkupLine("[blue]Sql Server Index Management System - Credentials Manager[/]");
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(4) ?? "4.3.2.0";
+            AnsiConsole.MarkupLine($"[blue]Sql Server Index Management System - Credentials Manager v{version}[/]");
 
             // Parse --file parameter
             var commandArgs = new List<string>(args);

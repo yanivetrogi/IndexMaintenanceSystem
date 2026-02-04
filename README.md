@@ -15,6 +15,7 @@ The SQL Server Index Maintenance System automates the process of maintaining dat
 - Concurrent operation management with thread limits
 - Detailed logging of all operations
 - **Web Management Dashboard**: Modern Blazor-based UI for managing configuration and monitoring history
+- **Windows Event Log Integration**: Critical events, startup, and shutdown logging for enterprise monitoring
 - Support for running as a Windows service or console application
 
 ## Requirements
@@ -96,8 +97,6 @@ The credentials file is encrypted using `Windows DPAPI` and can only be decrypte
 ## Web Management Dashboard
 
 The system includes a modern, interactive web dashboard built with Blazor. This allows administrators to manage the maintenance system without writing direct SQL queries.
-
-![Schedule configuration UI](./scheduling-ui.png)
 
 ### Key Dashboard Features
 
@@ -307,9 +306,11 @@ The `active` flag controls whether an entity participates in maintenance operati
 
 This flag follows the hierarchical inheritance model:
 
-- Inactive server â†’ All its databases and indexes are skipped
-- Inactive database â†’ All its indexes are skipped regardless of their individual settings
-- Inactive index â†’ Only that specific index is excluded
+This flag follows the hierarchical inheritance model:
+
+- Inactive server -> All its databases and indexes are skipped
+- Inactive database -> All its indexes are skipped regardless of their individual settings
+- Inactive index -> Only that specific index is excluded
 
 Use this flag to temporarily exclude maintenance targets.
 
@@ -431,11 +432,25 @@ Stores detailed logs of index maintenance operations, including executed SQL com
 The following entity relationship diagram illustrates the structure and relationships between all system tables:
 ![schema](./schema.png)
 
-## Logging
+## Logging & Monitoring
+
+The system provides multiple layers of logging to ensure visibility into maintenance operations and system health:
+
+### 1. File & Console Logging
 
 The system logs all operations to both console and files in the `logs` directory. Each log entry includes a correlation GUID for tracking related operations. Log entries can be correlated with their respective history entries in the `ims_history_entries` table by using this correlation ID, providing an integrated view of both file-based logs and database-stored operation history.
 
-The log level can be set in appsettings.json:
+The log level can be set in `appsettings.json`:
+
+### 2. Windows Event Log
+
+For enterprise-level monitoring, the system integrates with the Windows Event Log. It uses the source `IndexMaintenanceSystem` under the `Application` log.
+
+Key events logged include:
+
+- **Service Startup**: Includes the system version and operational mode.
+- **Service Shutdown**: Logs graceful stopping of the service.
+- **Critical Errors**: Any unhandled exceptions that cause a service failure are logged with full stack traces for immediate troubleshooting.
 
 ```Json
 {

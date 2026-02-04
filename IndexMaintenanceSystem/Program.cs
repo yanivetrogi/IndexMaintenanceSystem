@@ -96,9 +96,23 @@ namespace IndexMaintenanceSystem
             var config = new GlobalConfig();
             app.Configuration.Bind(config);
             logger!.LogInformation(config!.ToString());
-            logger!.LogInformation("Index Maintenance System started: Version 2.6.0 (Web Dashboard Enabled)");
 
-            app.Run();
+            var version = EventLogHelper.GetVersion();
+            var startupMsg = $"Index Maintenance System started: Version {version} (Web Dashboard Enabled)";
+            logger!.LogInformation(startupMsg);
+            if (OperatingSystem.IsWindows()) EventLogHelper.LogInformation(startupMsg);
+
+            try
+            {
+                app.Run();
+                if (OperatingSystem.IsWindows()) EventLogHelper.LogInformation("Index Maintenance System stopped.");
+            }
+            catch (Exception ex)
+            {
+                if (OperatingSystem.IsWindows()) EventLogHelper.LogError("Index Maintenance System encountered a critical error and will shut down.", ex);
+                logger!.LogCritical(ex, "Critical Exception in Program.Run");
+                throw;
+            }
         }
     }
 }
