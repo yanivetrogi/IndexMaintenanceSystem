@@ -49,6 +49,13 @@ and [name] like 'f_ims_%'";
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
+        // Yield immediately so BackgroundService.StartAsync returns to the host
+        // before any blocking work begins. Without this, the synchronous DB
+        // connection checks below run on the startup thread; if they fail or
+        // time-out, the exception propagates through Host.StartAsync and cancels
+        // the startup token, causing Kestrel to throw TaskCanceledException.
+        await Task.Yield();
+
         try
         {
             ImsConnectionStoredProceduresExtensions.ValidateStoredProcedureDefinitionFilesExist();
