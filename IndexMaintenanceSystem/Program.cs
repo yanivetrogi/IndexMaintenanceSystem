@@ -13,6 +13,10 @@ namespace IndexMaintenanceSystem
     {
         public static void Main(string[] args)
         {
+            // When running as a Windows service the working directory defaults to
+            // C:\Windows\system32, so explicitly set it to the executable's folder.
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Configure Windows Service
