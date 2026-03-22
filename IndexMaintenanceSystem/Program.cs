@@ -13,18 +13,21 @@ namespace IndexMaintenanceSystem
     {
         public static void Main(string[] args)
         {
-            // When running as a Windows service the working directory defaults to
-            // C:\Windows\system32, so explicitly set it to the executable's folder.
-            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
-
-            var builder = WebApplication.CreateBuilder(args);
+            // Explicitly set the content root to the executable's folder so that
+            // appsettings.json is found when running as a Windows service (whose
+            // default working directory is C:\Windows\system32).
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                Args = args,
+                ContentRootPath = AppContext.BaseDirectory
+            });
 
             // Configure Windows Service
             builder.Host.UseWindowsService();
 
             // Configure Configuration
-            builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-            builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+            // appsettings.json and appsettings.{env}.json are already added automatically
+            // by WebApplication.CreateBuilder from ContentRootPath above.
 
             builder.Services.Configure<GlobalConfig>(builder.Configuration);
 
