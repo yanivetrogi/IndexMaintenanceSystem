@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>4.3.2.0</Version>
+    <Version>4.3.2.1</Version>
     <UserSecretsId>dotnet-IndexMaintenanceSystem-5AE7C9C2-7C3F-47E3-B881-9CE7ED036F4A</UserSecretsId>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
     <SelfContained>false</SelfContained>
