@@ -1,5 +1,4 @@
-$currentPath = Get-Location
-$exePath = Join-Path $currentPath "IndexMaintenanceSystem.exe"
+$exePath = Join-Path $PSScriptRoot "IndexMaintenanceSystem.exe"
 
 if (-not (Test-Path $exePath)) {
     Write-Error "Could not find IndexMaintenanceSystem.exe in $currentPath. Please run this script from the directory containing the executable."
@@ -23,7 +22,7 @@ if (Get-Service $serviceName -ErrorAction SilentlyContinue) {
 }
 
 New-Service -Name $serviceName `
-            -BinaryPathName "`"$exePath`" --contentRoot `"$currentPath`"" `
+            -BinaryPathName "`"$exePath`""   `
             -DisplayName $displayName `
             -Description "Automated SQL Server Index Maintenance Service with Web Dashboard." `
             -StartupType Automatic
