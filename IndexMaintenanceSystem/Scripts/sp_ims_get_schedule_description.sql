@@ -2,7 +2,7 @@
 -- sp_ims_get_schedule_description with improved day boundary crossing descriptions
 -- =============================================
 
-CREATE PROCEDURE [dbo].[sp_ims_get_schedule_description]
+CREATE OR ALTER PROCEDURE [dbo].[sp_ims_get_schedule_description]
 (
     @freq_type INT,
     @freq_interval INT,

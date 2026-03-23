@@ -1,4 +1,4 @@
-CREATE FUNCTION f_ims_match_day
+CREATE OR ALTER FUNCTION f_ims_match_day
 (
     @startDate DATE,
     @freq_type INT,

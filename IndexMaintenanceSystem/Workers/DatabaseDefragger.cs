@@ -21,6 +21,7 @@ public class DatabaseDefragger : BackgroundService
     private readonly IOptions<GlobalConfig> _globalConfigOptions;
     private readonly ConcurrentDictionary<(string Server, string Database, string Index), Task> _ongoingIndexExecutions = new();
     private readonly ConcurrentDictionary<(string Server, string Database), Task> _ongoingDatabaseExecutions = new();
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _agSwitchLocks = new();
 
     private int _executionIntervalSeconds => _globalConfigOptions.Value.ExecutionIntervalSeconds ?? 30;
 
@@ -718,15 +719,25 @@ public class DatabaseDefragger : BackgroundService
                 imsConnection.Close();
             }
 
-            // Switch to async only if the AG is still in synchronous mode.
-            // If another database already switched it, this is a no-op for the ALTER but the row is already registered.
-            var isAlwaysonAndSync = await clientConnection.IsDatabaseAlwaysonAndSynchronousAsync(database);
-            if (isAlwaysonAndSync)
+            // Serialize the check-and-ALTER per server to prevent multiple parallel databases
+            // from all passing the sync check before any ALTER fires (race condition).
+            var agLock = _agSwitchLocks.GetOrAdd(server, _ => new SemaphoreSlim(1, 1));
+            await agLock.WaitAsync(cancellationToken);
+            try
             {
-                _logger.LogInformation($"[{processId}] {database} on {server} is in synchronous_commit mode. Changing availability_mode to asynchronous_commit for all availability groups.");
-                var sqls = await clientConnection.GetAgSetSyncSqlsAsync(database);
-                foreach (var sql in sqls)
-                    await clientConnection.ExecuteAsync(new CommandDefinition(sql, commandTimeout: 0, cancellationToken: cancellationToken));
+                // Switch to async only if the AG is still in synchronous mode.
+                var isAlwaysonAndSync = await clientConnection.IsDatabaseAlwaysonAndSynchronousAsync(database);
+                if (isAlwaysonAndSync)
+                {
+                    _logger.LogInformation($"[{processId}] {database} on {server} is in synchronous_commit mode. Changing availability_mode to asynchronous_commit for all availability groups.");
+                    var sqls = await clientConnection.GetAgSetSyncSqlsAsync(database);
+                    foreach (var sql in sqls)
+                        await clientConnection.ExecuteAsync(new CommandDefinition(sql, commandTimeout: 0, cancellationToken: cancellationToken));
+                }
+            }
+            finally
+            {
+                agLock.Release();
             }
 
             clientConnection.Close();

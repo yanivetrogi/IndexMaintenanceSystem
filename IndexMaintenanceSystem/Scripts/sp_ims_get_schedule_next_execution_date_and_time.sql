@@ -1,5 +1,5 @@
 -- Main procedure
-CREATE PROCEDURE [dbo].[sp_ims_get_schedule_next_execution_date_and_time] 
+CREATE OR ALTER PROCEDURE [dbo].[sp_ims_get_schedule_next_execution_date_and_time] 
 (
     @freq_type INT,                    -- 1=One-time, 4=Daily, 8=Weekly, 16=Monthly, 32=Monthly Relative
     @freq_interval INT,                -- Interval value (depends on freq_type)

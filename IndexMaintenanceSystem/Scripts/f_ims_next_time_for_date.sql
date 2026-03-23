@@ -1,4 +1,4 @@
-CREATE FUNCTION f_ims_next_time_for_date
+CREATE OR ALTER FUNCTION f_ims_next_time_for_date
 (
     @windowStart TIME,
     @windowEnd TIME,

@@ -146,7 +146,7 @@ SELECT
        'ALTER AVAILABILITY GROUP [' + ag.name + '] MODIFY REPLICA ON N''' + ar.replica_server_name + ''' WITH (AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT);'
 FROM sys.dm_hadr_database_replica_states drs
 INNER JOIN sys.availability_groups AS ag ON ag.group_id = drs.group_id
-INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id AND drs.replica_id = ar.replica_id
+INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id
 WHERE DB_NAME(drs.database_id) = @Database
 AND drs.is_primary_replica = 1
 AND drs.synchronization_state_desc = N'SYNCHRONIZED'
@@ -176,7 +176,7 @@ SELECT
        'ALTER AVAILABILITY GROUP [' + ag.name + '] MODIFY REPLICA ON N''' + ar.replica_server_name + ''' WITH (AVAILABILITY_MODE = SYNCHRONOUS_COMMIT);'
 FROM sys.dm_hadr_database_replica_states drs
 INNER JOIN sys.availability_groups AS ag ON ag.group_id = drs.group_id
-INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id AND drs.replica_id = ar.replica_id
+INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id
 WHERE DB_NAME(drs.database_id) = @Database
 AND drs.is_primary_replica = 1
 AND ar.availability_mode_desc = N'ASYNCHRONOUS_COMMIT'
@@ -194,7 +194,7 @@ SELECT
        'ALTER AVAILABILITY GROUP [' + ag.name + '] MODIFY REPLICA ON N''' + ar.replica_server_name + ''' WITH (AVAILABILITY_MODE = SYNCHRONOUS_COMMIT);'
 FROM sys.dm_hadr_database_replica_states drs
 INNER JOIN sys.availability_groups AS ag ON ag.group_id = drs.group_id
-INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id AND drs.replica_id = ar.replica_id
+INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id
 WHERE DB_NAME(drs.database_id) = @Database
 AND drs.is_primary_replica = 1
 AND ar.availability_mode_desc = N'ASYNCHRONOUS_COMMIT'

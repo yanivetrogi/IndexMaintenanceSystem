@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[sp_ims_plan_next_check] 
+CREATE OR ALTER PROCEDURE [dbo].[sp_ims_plan_next_check] 
 (
     @server_id INT,
     @database_id INT,

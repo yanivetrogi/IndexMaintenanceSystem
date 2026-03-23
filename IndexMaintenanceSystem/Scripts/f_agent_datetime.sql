@@ -1,4 +1,4 @@
-CREATE FUNCTION [dbo].[ims_agent_datetime](@date int, @time int)
+CREATE OR ALTER FUNCTION [dbo].[ims_agent_datetime](@date int, @time int)
 RETURNS DATETIME
 AS
 BEGIN

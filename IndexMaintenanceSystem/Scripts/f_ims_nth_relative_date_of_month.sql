@@ -1,4 +1,4 @@
-CREATE FUNCTION f_ims_nth_relative_date_of_month
+CREATE OR ALTER FUNCTION f_ims_nth_relative_date_of_month
 (
     @year INT,
     @month INT,

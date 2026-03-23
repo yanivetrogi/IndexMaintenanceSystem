@@ -196,14 +196,14 @@ and [name] like 'f_ims_%'";
         try
         {
             await ignoreIfExists(connection.ExecuteAsync(_00_Schema.CreateTablesSql));
-            await ignoreIfExists(connection.ApplyGetScheduleDescriptionStoredProceduresAsync());
+            await connection.ApplyGetScheduleDescriptionStoredProceduresAsync();
             await connection.ExecuteAsync(_01_SchedulesDescriptionTrigger.CreateSchedulesDescriptionTriggerSql);
-            await ignoreIfExists(connection.ApplyAgentDatetimeFunctionAsync());
-            await ignoreIfExists(connection.ApplyNthRelativeDateOfMonthFunctionAsync());
-            await ignoreIfExists(connection.ApplyMatchDayFunctionAsync());
-            await ignoreIfExists(connection.ApplyNextTimeForDateFunctionAsync());
-            await ignoreIfExists(connection.ApplyGetScheduleNextExecutionStoredProcedureAsync());
-            await ignoreIfExists(connection.ApplyPlanNextCheckStoredProceduresAsync());
+            await connection.ApplyAgentDatetimeFunctionAsync();
+            await connection.ApplyNthRelativeDateOfMonthFunctionAsync();
+            await connection.ApplyMatchDayFunctionAsync();
+            await connection.ApplyNextTimeForDateFunctionAsync();
+            await connection.ApplyGetScheduleNextExecutionStoredProcedureAsync();
+            await connection.ApplyPlanNextCheckStoredProceduresAsync();
             await connection.ExecuteAsync(_02_ServersTrigger.CreateServersTriggerSql);
             await connection.ExecuteAsync(_03_DatabasesTrigger.CreateDatabasesTriggerSql);
             await connection.ExecuteAsync(_04_IndexesTrigger.CreateIndexesTriggerSql);
@@ -244,7 +244,7 @@ and [name] like 'f_ims_%'";
 
 
             await connection.ExecuteAsync(_10_MaxDopToTinyint.AlterMaxdopFromBitToTinyintSql);
-            await ignoreIfExists(connection.ExecuteAsync(_11_SchedulesReplanTrigger.CreateSchedulesReplanTriggerSql));
+            await connection.ExecuteAsync(_11_SchedulesReplanTrigger.CreateSchedulesReplanTriggerSql);
             await connection.ExecuteAsync(_12_ExcludeLastPartitionToEveryLevel.ExcludeLastPartitionToEveryLevelSql);
             await connection.ExecuteAsync(_13_IndexMinSize.IndexMinSizeSql);
             await connection.ExecuteAsync(_14_TlogFactors.TlogFactorsColumnsSql);
@@ -255,9 +255,9 @@ and [name] like 'f_ims_%'";
             await connection.ExecuteAsync(_19_DeleteGetScheduleNextExecutionProcedure.DeleteGetScheduleNextExecutionProcedureSql);
             await connection.ExecuteAsync(_23_AlwaysonDatabasesAgName.AlwaysonDatabasesAgNameSql);
             
-            await ignoreIfExists(connection.ApplyNthRelativeDateOfMonthFunctionAsync());
-            await ignoreIfExists(connection.ApplyMatchDayFunctionAsync());
-            await ignoreIfExists(connection.ApplyNextTimeForDateFunctionAsync());
+            await connection.ApplyNthRelativeDateOfMonthFunctionAsync();
+            await connection.ApplyMatchDayFunctionAsync();
+            await connection.ApplyNextTimeForDateFunctionAsync();
 
             await connection.ApplyGetScheduleNextExecutionStoredProcedureAsync();
 
