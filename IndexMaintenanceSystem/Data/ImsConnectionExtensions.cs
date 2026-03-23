@@ -346,20 +346,21 @@ WHERE
     public static async Task<IEnumerable<DatabaseAlwayson>> GetDatabasesWithAlwaysonAsync(this IDbConnection _connection)
     {
         var query =
-@"SELECT s.[name] AS [Server], s.[integrated_security] AS [IntegratedSecurity], d.[name] AS [Database]
+@"SELECT s.[name] AS [Server], s.[integrated_security] AS [IntegratedSecurity], d.[name] AS [Database], ad.ag_name AS [AgName]
 FROM ims_alwayson_databases ad
 join ims_databases d on ad.database_id = d.database_id
 join ims_servers s on d.server_id = s.server_id";
         return await _connection.QueryAsync<DatabaseAlwayson>(query);
     }
 
-    public static async Task AddAlwaysonDatabaseAsync(this IDbConnection _connection, string server, string database)
+    public static async Task AddAlwaysonDatabaseAsync(this IDbConnection _connection, string server, string database, string agName)
     {
-        var query = @$"INSERT INTO ims_alwayson_databases (database_id)
-VALUES ((SELECT d.database_id FROM ims_databases d
+        var query = @$"INSERT INTO ims_alwayson_databases (database_id, ag_name)
+SELECT d.database_id, @AgName FROM ims_databases d
     JOIN ims_servers s ON d.server_id = s.server_id
-    WHERE s.[name] = @Server AND d.[name] = @Database))";
-        await InLock(async () => await _connection.ExecuteAsync(query, new { Server = server, Database = database }));
+    WHERE s.[name] = @Server AND d.[name] = @Database
+    AND NOT EXISTS (SELECT 1 FROM ims_alwayson_databases WHERE database_id = d.database_id AND ag_name = @AgName)";
+        await InLock(async () => await _connection.ExecuteAsync(query, new { Server = server, Database = database, AgName = agName }));
     }
 
     public static async Task RemoveAlwaysonDatabaseAsync(this IDbConnection _connection, string server, string database)
@@ -372,5 +373,40 @@ WHERE database_id = (
     JOIN ims_servers s ON d.server_id = s.server_id
     WHERE s.[name] = @Server AND d.[name] = @Database)";
         await InLock(async () => await _connection.ExecuteAsync(query, new { Server = server, Database = database }));
+    }
+
+    /// <summary>
+    /// Atomically removes all (database, ag) tracking entries for the given database and returns the
+    /// list of AG names for which this database was the last remaining — i.e. those AGs should now be reverted.
+    /// </summary>
+    public static async Task<IEnumerable<string>> RemoveAlwaysonDatabaseAndGetAgsToRevertAsync(this IDbConnection _connection, string server, string database)
+    {
+        return await InLock(async () =>
+        {
+            // Find which AGs this database was tracking, paired with remaining count per AG after removal.
+            var query =
+@"SELECT ad.ag_name,
+        (SELECT COUNT(*) FROM ims_alwayson_databases ad2
+             JOIN ims_databases d2 ON ad2.database_id = d2.database_id
+             JOIN ims_servers s2 ON d2.server_id = s2.server_id
+         WHERE s2.[name] = @Server AND ad2.ag_name = ad.ag_name
+           AND NOT (d2.[name] = @Database)) AS remaining
+FROM ims_alwayson_databases ad
+JOIN ims_databases d ON ad.database_id = d.database_id
+JOIN ims_servers s ON d.server_id = s.server_id
+WHERE s.[name] = @Server AND d.[name] = @Database";
+
+            var rows = await _connection.QueryAsync<(string AgName, int Remaining)>(query, new { Server = server, Database = database });
+
+            var deleteQuery =
+@"DELETE FROM ims_alwayson_databases
+WHERE database_id = (
+    SELECT d.database_id FROM ims_databases d
+    JOIN ims_servers s ON d.server_id = s.server_id
+    WHERE s.[name] = @Server AND d.[name] = @Database)";
+            await _connection.ExecuteAsync(deleteQuery, new { Server = server, Database = database });
+
+            return rows.Where(r => r.Remaining == 0).Select(r => r.AgName).ToList();
+        });
     }
 }

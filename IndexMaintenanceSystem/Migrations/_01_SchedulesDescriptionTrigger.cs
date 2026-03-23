@@ -3,7 +3,7 @@ namespace IndexMaintenanceSystem.Migrations;
 public static class _01_SchedulesDescriptionTrigger
 {
     public static string CreateSchedulesDescriptionTriggerSql =
-@$"CREATE TRIGGER [dbo].[trigger_ims_schedules_insert_update]
+@$"CREATE OR ALTER TRIGGER [dbo].[trigger_ims_schedules_insert_update]
 ON [dbo].[ims_schedules]
 AFTER INSERT, UPDATE
 AS

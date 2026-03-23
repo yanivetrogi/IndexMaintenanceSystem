@@ -111,6 +111,17 @@ WHERE f.type_desc LIKE N'LOG'";
         return await _connection.QuerySingleAsync<int>(query);
     }
 
+    public static async Task<bool> IsDatabaseInAnyAgAsync(this IDbConnection _connection, string database)
+    {
+        var query =
+@$"SELECT COUNT(*)
+FROM sys.dm_hadr_database_replica_states
+WHERE database_id = DB_ID(@Database)
+    AND is_local = 1";
+
+        return await _connection.ExecuteScalarAsync<int>(query, new { Database = database }) > 0;
+    }
+
     public static async Task<bool> IsDatabaseAlwaysonAndSynchronousAsync(this IDbConnection _connection, string database)
     {
         var query =
@@ -121,7 +132,8 @@ WHERE drs.database_id = DB_ID(@Database)
     AND synchronization_state_desc = N'SYNCHRONIZED'
     AND drs.synchronization_health_desc = N'HEALTHY'
     AND database_state_desc = N'ONLINE'
-    AND drs.is_local = 1";
+    AND drs.is_local = 1
+    AND ar.availability_mode_desc = N'SYNCHRONOUS_COMMIT'";
 
         return await _connection.ExecuteScalarAsync<int>(query, new { Database = database }) > 0;
     }
@@ -138,9 +150,40 @@ INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id AND drs
 WHERE DB_NAME(drs.database_id) = @Database
 AND drs.is_primary_replica = 1
 AND drs.synchronization_state_desc = N'SYNCHRONIZED'
+AND ar.availability_mode_desc = N'SYNCHRONOUS_COMMIT'
 ";
 
         return await _connection.QueryAsync<string>(query, new { Database = database });
+    }
+
+    public static async Task<IEnumerable<string>> GetAgNamesAsync(this IDbConnection _connection, string database)
+    {
+        var query =
+@$"SELECT DISTINCT ag.name
+FROM sys.dm_hadr_database_replica_states drs
+INNER JOIN sys.availability_groups ag ON drs.group_id = ag.group_id
+WHERE drs.database_id = DB_ID(@Database)
+    AND drs.is_local = 1";
+
+        return await _connection.QueryAsync<string>(query, new { Database = database });
+    }
+
+    public static async Task<IEnumerable<string>> GetAgSqlsRevertForAgAsync(this IDbConnection _connection, string database, string agName)
+    {
+        var query =
+@$"
+SELECT
+       'ALTER AVAILABILITY GROUP [' + ag.name + '] MODIFY REPLICA ON N''' + ar.replica_server_name + ''' WITH (AVAILABILITY_MODE = SYNCHRONOUS_COMMIT);'
+FROM sys.dm_hadr_database_replica_states drs
+INNER JOIN sys.availability_groups AS ag ON ag.group_id = drs.group_id
+INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id AND drs.replica_id = ar.replica_id
+WHERE DB_NAME(drs.database_id) = @Database
+AND drs.is_primary_replica = 1
+AND ar.availability_mode_desc = N'ASYNCHRONOUS_COMMIT'
+AND ag.name = @AgName
+";
+
+        return await _connection.QueryAsync<string>(query, new { Database = database, AgName = agName });
     }
 
     public static async Task<IEnumerable<string>> GetAgSqlsRevertAsync(this IDbConnection _connection, string database)
@@ -154,7 +197,7 @@ INNER JOIN sys.availability_groups AS ag ON ag.group_id = drs.group_id
 INNER JOIN sys.availability_replicas AS ar ON drs.group_id = ar.group_id AND drs.replica_id = ar.replica_id
 WHERE DB_NAME(drs.database_id) = @Database
 AND drs.is_primary_replica = 1
-AND drs.synchronization_state_desc = N'SYNCHRONIZED'
+AND ar.availability_mode_desc = N'ASYNCHRONOUS_COMMIT'
 ";
 
         return await _connection.QueryAsync<string>(query, new { Database = database });

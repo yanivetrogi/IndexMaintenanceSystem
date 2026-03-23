@@ -3,7 +3,7 @@ namespace IndexMaintenanceSystem.Migrations;
 public static class _02_ServersTrigger
 {
     public static string CreateServersTriggerSql =
-@$"CREATE TRIGGER [dbo].[trigger_ims_servers_insert_update]
+@$"CREATE OR ALTER TRIGGER [dbo].[trigger_ims_servers_insert_update]
 ON [dbo].[ims_servers]
 AFTER INSERT, UPDATE
 AS

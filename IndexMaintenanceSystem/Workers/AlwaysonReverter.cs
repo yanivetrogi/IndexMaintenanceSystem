@@ -49,7 +49,7 @@ public class AlwaysonReverter : BackgroundService
 
             foreach (var database in databases)
             {
-                _logger.LogInformation($"Reverting Alwayson for database: {database.Database} on server: {database.Server}");
+                _logger.LogInformation($"Reverting Alwayson for database: {database.Database} on server: {database.Server}, AG: {database.AgName}");
 
                 using var clientConnection = _clientConnectionPool.GetMasterConnection(database.Server, database.IntegratedSecurity);
 
@@ -67,7 +67,7 @@ public class AlwaysonReverter : BackgroundService
 
                 clientConnection.Open();
 
-                var agSqls = await clientConnection.GetAgSqlsRevertAsync(database.Database);
+                var agSqls = await clientConnection.GetAgSqlsRevertForAgAsync(database.Database, database.AgName);
 
                 foreach (var sql in agSqls)
                 {

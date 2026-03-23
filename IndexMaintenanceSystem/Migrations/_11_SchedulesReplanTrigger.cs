@@ -3,7 +3,7 @@ namespace IndexMaintenanceSystem.Migrations;
 public static class _11_SchedulesReplanTrigger
 {
     public static string CreateSchedulesReplanTriggerSql =
-@$"CREATE TRIGGER [dbo].[trigger_ims_schedules_replan_on_insert_update]
+@$"CREATE OR ALTER TRIGGER [dbo].[trigger_ims_schedules_replan_on_insert_update]
 ON [dbo].[ims_schedules]
 AFTER INSERT, UPDATE
 AS

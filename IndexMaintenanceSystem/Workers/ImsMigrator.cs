@@ -197,17 +197,17 @@ and [name] like 'f_ims_%'";
         {
             await ignoreIfExists(connection.ExecuteAsync(_00_Schema.CreateTablesSql));
             await ignoreIfExists(connection.ApplyGetScheduleDescriptionStoredProceduresAsync());
-            await ignoreIfExists(connection.ExecuteAsync(_01_SchedulesDescriptionTrigger.CreateSchedulesDescriptionTriggerSql));
+            await connection.ExecuteAsync(_01_SchedulesDescriptionTrigger.CreateSchedulesDescriptionTriggerSql);
             await ignoreIfExists(connection.ApplyAgentDatetimeFunctionAsync());
             await ignoreIfExists(connection.ApplyNthRelativeDateOfMonthFunctionAsync());
             await ignoreIfExists(connection.ApplyMatchDayFunctionAsync());
             await ignoreIfExists(connection.ApplyNextTimeForDateFunctionAsync());
             await ignoreIfExists(connection.ApplyGetScheduleNextExecutionStoredProcedureAsync());
             await ignoreIfExists(connection.ApplyPlanNextCheckStoredProceduresAsync());
-            await ignoreIfExists(connection.ExecuteAsync(_02_ServersTrigger.CreateServersTriggerSql));
-            await ignoreIfExists(connection.ExecuteAsync(_03_DatabasesTrigger.CreateDatabasesTriggerSql));
-            await ignoreIfExists(connection.ExecuteAsync(_04_IndexesTrigger.CreateIndexesTriggerSql));
-            await ignoreIfExists(connection.ExecuteAsync(_11_SchedulesReplanTrigger.CreateSchedulesReplanTriggerSql));
+            await connection.ExecuteAsync(_02_ServersTrigger.CreateServersTriggerSql);
+            await connection.ExecuteAsync(_03_DatabasesTrigger.CreateDatabasesTriggerSql);
+            await connection.ExecuteAsync(_04_IndexesTrigger.CreateIndexesTriggerSql);
+            await connection.ExecuteAsync(_11_SchedulesReplanTrigger.CreateSchedulesReplanTriggerSql);
         }
         finally
         {
@@ -253,6 +253,7 @@ and [name] like 'f_ims_%'";
             await connection.ExecuteAsync(_17_TlogSettingsToServer.TlogSettingsToServerSql);
             await connection.ExecuteAsync(_18_EnableAlwaysOnSetting.EnableAlwaysOnSettingSql);
             await connection.ExecuteAsync(_19_DeleteGetScheduleNextExecutionProcedure.DeleteGetScheduleNextExecutionProcedureSql);
+            await connection.ExecuteAsync(_23_AlwaysonDatabasesAgName.AlwaysonDatabasesAgNameSql);
             
             await ignoreIfExists(connection.ApplyNthRelativeDateOfMonthFunctionAsync());
             await ignoreIfExists(connection.ApplyMatchDayFunctionAsync());
@@ -266,10 +267,10 @@ and [name] like 'f_ims_%'";
             await connection.ExecuteAsync(_22_UpdateScheduleDescriptionToNullWhereError.DeleteGetScheduleDescriptionStoredProcedureSql);
             
             // Ensure core triggers exist (for robustness against broken schemas)
-            await ignoreIfExists(connection.ExecuteAsync(_01_SchedulesDescriptionTrigger.CreateSchedulesDescriptionTriggerSql));
-            await ignoreIfExists(connection.ExecuteAsync(_02_ServersTrigger.CreateServersTriggerSql));
-            await ignoreIfExists(connection.ExecuteAsync(_03_DatabasesTrigger.CreateDatabasesTriggerSql));
-            await ignoreIfExists(connection.ExecuteAsync(_04_IndexesTrigger.CreateIndexesTriggerSql));
+            await connection.ExecuteAsync(_01_SchedulesDescriptionTrigger.CreateSchedulesDescriptionTriggerSql);
+            await connection.ExecuteAsync(_02_ServersTrigger.CreateServersTriggerSql);
+            await connection.ExecuteAsync(_03_DatabasesTrigger.CreateDatabasesTriggerSql);
+            await connection.ExecuteAsync(_04_IndexesTrigger.CreateIndexesTriggerSql);
         }
         finally
         {

@@ -3,7 +3,7 @@ namespace IndexMaintenanceSystem.Migrations;
 public static class _03_DatabasesTrigger
 {
     public static string CreateDatabasesTriggerSql =
-@$"CREATE TRIGGER [dbo].[trigger_ims_databases_insert_update]
+@$"CREATE OR ALTER TRIGGER [dbo].[trigger_ims_databases_insert_update]
 ON [dbo].[ims_databases]
 AFTER INSERT, UPDATE
 AS

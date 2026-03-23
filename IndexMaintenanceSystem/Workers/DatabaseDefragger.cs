@@ -696,48 +696,63 @@ public class DatabaseDefragger : BackgroundService
 
         clientConnection.Open();
 
-        var isAlwasyonDatabase = await clientConnection!.IsDatabaseAlwaysonAndSynchronousAsync(database);
-        bool? addOrRemoveAlwaysonDatabase = null;
-
-        IEnumerable<string> sqls = new List<string>();
-
-        if (isAlwasyonDatabase && !setSynchronousCommit)
+        if (!setSynchronousCommit)
         {
-            _logger.LogInformation($"[{processId}] {database} on {server} is in synchronous_commit mode. Changing availability_mode to asynchronous_commit for all availability groups.");
-            sqls = await clientConnection.GetAgSetSyncSqlsAsync(database);
-            addOrRemoveAlwaysonDatabase = true;
-        }
-        else if (!isAlwasyonDatabase && setSynchronousCommit)
-        {
-            _logger.LogInformation($"[{processId}] {database} on {server} is in asynchronous_commit mode. Changing availability_mode to synchronous_commit for all availability groups.");
-            sqls = await clientConnection.GetAgSqlsRevertAsync(database);
-            addOrRemoveAlwaysonDatabase = false;
-        }
-
-        foreach (var sql in sqls)
-        {
-            await clientConnection.ExecuteAsync(new CommandDefinition(sql, commandTimeout: 0, cancellationToken: cancellationToken));
-        }
-
-        clientConnection.Close();
-
-        if (addOrRemoveAlwaysonDatabase.HasValue)
-        {
-            using var imsConnection = _imsDbConectionFactory();
-            imsConnection.Open();
-
-            if (addOrRemoveAlwaysonDatabase.Value)
+            // Determine which AGs this database belongs to.
+            var agNames = (await clientConnection.GetAgNamesAsync(database)).ToList();
+            if (agNames.Count == 0)
             {
-                await imsConnection.AddAlwaysonDatabaseAsync(server, database);
-            }
-            else
-            {
-                await imsConnection.RemoveAlwaysonDatabaseAsync(server, database);
+                clientConnection.Close();
+                return false;
             }
 
-            imsConnection.Close();
-        }
+            // Register BEFORE issuing the ALTER so that AlwaysonReverter can always recover the AG
+            // if the program is stopped after the ALTER but before registration completes.
+            // If the program crashes before the ALTER, AlwaysonReverter finds the row but the AG is
+            // still in sync mode — GetAgSqlsRevertForAgAsync returns nothing → safe no-op.
+            using (var imsConnection = _imsDbConectionFactory())
+            {
+                imsConnection.Open();
+                foreach (var agName in agNames)
+                    await imsConnection.AddAlwaysonDatabaseAsync(server, database, agName);
+                imsConnection.Close();
+            }
 
-        return isAlwasyonDatabase;
+            // Switch to async only if the AG is still in synchronous mode.
+            // If another database already switched it, this is a no-op for the ALTER but the row is already registered.
+            var isAlwaysonAndSync = await clientConnection.IsDatabaseAlwaysonAndSynchronousAsync(database);
+            if (isAlwaysonAndSync)
+            {
+                _logger.LogInformation($"[{processId}] {database} on {server} is in synchronous_commit mode. Changing availability_mode to asynchronous_commit for all availability groups.");
+                var sqls = await clientConnection.GetAgSetSyncSqlsAsync(database);
+                foreach (var sql in sqls)
+                    await clientConnection.ExecuteAsync(new CommandDefinition(sql, commandTimeout: 0, cancellationToken: cancellationToken));
+            }
+
+            clientConnection.Close();
+            return true;
+        }
+        else
+        {
+            // Remove from tracking. For each AG where this was the last database, revert that AG.
+            IEnumerable<string> agsToRevert;
+            using (var imsConnection = _imsDbConectionFactory())
+            {
+                imsConnection.Open();
+                agsToRevert = await imsConnection.RemoveAlwaysonDatabaseAndGetAgsToRevertAsync(server, database);
+                imsConnection.Close();
+            }
+
+            foreach (var agName in agsToRevert)
+            {
+                _logger.LogInformation($"[{processId}] Last database for AG [{agName}] on {server} completed. Reverting availability_mode to synchronous_commit.");
+                var sqls = await clientConnection.GetAgSqlsRevertForAgAsync(database, agName);
+                foreach (var sql in sqls)
+                    await clientConnection.ExecuteAsync(new CommandDefinition(sql, commandTimeout: 0, cancellationToken: cancellationToken));
+            }
+
+            clientConnection.Close();
+            return true;
+        }
     }
 }
