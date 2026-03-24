@@ -370,4 +370,11 @@ SqlServerIndexMaintenanceSystem/triggers_dump.txt
 SqlServerIndexMaintenanceSystem/validation_error.txt
 *.bin
 publish_v*/
+
+# Release output folders
+Release_v*/
+
+# Publish output
+publish_output/
+
 appsettings.json
