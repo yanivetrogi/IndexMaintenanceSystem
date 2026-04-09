@@ -179,7 +179,9 @@ CREATE TABLE [dbo].[ims_next_checks] (
 );
 
 CREATE TABLE [dbo].[ims_alwayson_databases] (
-    database_id INT PRIMARY KEY,
+    database_id INT NOT NULL,
+    ag_name     NVARCHAR(128) NOT NULL,
+    CONSTRAINT PK_ims_alwayson_databases PRIMARY KEY (database_id, ag_name),
     FOREIGN KEY (database_id) REFERENCES [dbo].[ims_databases](database_id)
 );
 ";
